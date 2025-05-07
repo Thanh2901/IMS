@@ -1,0 +1,8 @@
+minio-cloud:
+  type: s3
+  provider: Minio
+  env_auth: false
+  access_key_id: admin
+  secret_access_key: password123
+  endpoint: http://minio:9000
+  region: us-east-1

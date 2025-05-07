@@ -1,0 +1,32 @@
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: api-gateway
+
+server:
+  port: 8000
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: auth-service
+        url: /api-docs/auth
+      - name: user-service
+        url: /api-docs/user
+      - name: camera-service
+        url: /api-docs/camera
+      - name: infrastructure-service
+        url: /api-docs/infrastructure
+      - name: report-service
+        url: /api-docs/report
+      - name: notification-service
+        url: /api-docs/notification
+

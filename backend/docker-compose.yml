@@ -1,0 +1,335 @@
+version: '4'
+
+services:
+
+#  infrastructure-service:
+#    build:
+#      context: infrastructure_service
+#      dockerfile: Dockerfile
+#    container_name: infrastructure-service
+#    ports:
+#      - "8084:8084"
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://infrastructure-db:5432/infra_service
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:9092
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#    depends_on:
+#      - infrastructure-db
+#      - broker
+#      - eureka-service
+#
+#  notification-service:
+#    build:
+#      context: notification_service
+#      dockerfile: Dockerfile
+#    container_name: notification-service
+#    ports:
+#      - "8085:8085"
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:9092
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#    depends_on:
+#      - notification-db
+#      - broker
+#      - eureka-service
+#
+#  report-service:
+#    build:
+#      context: report_service
+#      dockerfile: Dockerfile
+#    container_name: report-service
+#    ports:
+#      - "8087:8087"
+#    depends_on:
+#      - eureka-service
+#    environment:
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#    volumes:
+#      - C:/Users/admin:/app/storage
+#
+#  api-gateway:
+#    build:
+#      context: api_gateway
+#      dockerfile: Dockerfile
+#    container_name: api-gateway
+#    ports:
+#      - "8000:8000"
+#    depends_on:
+#      - eureka-service
+#    environment:
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#
+#  auth-service:
+#    build:
+#      context: auth_service
+#      dockerfile: Dockerfile
+#    container_name: auth-service
+#    ports:
+#      - "8001:8001"
+#    depends_on:
+#      - eureka-service
+#      - auth-db
+#      - redis
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_db
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#      REDIS_HOST: redis
+#      REDIS_PORT: 6379
+#  user-service:
+#    build:
+#      context: user_service
+#      dockerfile: Dockerfile
+#    container_name: user-service
+#    ports:
+#      - "8002:8002"
+#    depends_on:
+#      - eureka-service
+#      - user-db
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#
+#  camera-service:
+#    build:
+#      context: camera_service
+#      dockerfile: Dockerfile
+#    container_name: camera-service
+#    ports:
+#      - "8082:8082"
+#    depends_on:
+#      - eureka-service
+#      - camera-db
+#      - mediamtx
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://camera-db:5432/camera_service
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka/
+#
+#
+#  eureka-service:
+#    build:
+#      context: eureka_server
+#      dockerfile: Dockerfile
+#    container_name: eureka-service
+#    ports:
+#      - "8761:8761"
+
+  auth-db:
+    image: postgres
+    container_name: auth_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: auth_db
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+
+  user-db:
+    image: postgres
+    container_name: user_db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: user_db
+    volumes:
+      - user_data:/var/lib/postgresql/data
+
+  camera-db:
+    image: postgres
+    container_name: camera_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: camera_service
+    ports:
+      - "5555:5432"
+    volumes:
+      - camera_data:/var/lib/postgresql/data
+
+  infrastructure-db:
+    image: postgis/postgis:16-3.5-alpine
+    container_name: infra_db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: infra_service
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - infra_data_postgis:/var/lib/postgresql/data
+
+  notification-db:
+    image: postgres
+    container_name: notification_db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: notification_db
+    volumes:
+      - notification_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis
+    container_name: auth_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+
+  broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: broker
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    restart:
+      always
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092, HOST_PLAIN://192.168.9.88:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, HOST_PLAIN:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui
+    ports:
+      - "8086:8080"
+    depends_on:
+      - broker
+    environment:
+      KAFKA_CLUSTERS_NAME: local
+      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+
+  mediamtx:
+    image: bluenviron/mediamtx
+    container_name: mediamtx
+    restart: unless-stopped
+    environment:
+      - MTX_PROTOCOLS=tcp
+      - MTX_WEBRTCADDITIONALHOSTS=localhost
+      - MTX_HLSALLOWORIGIN=*
+      - MTX_HLSADDRESS=:8888
+      - MTX_WEBRTCADDRESS=:8189
+      - MTX_WEBRTCALLOWORIGIN=*
+      - MTX_API=yes
+      - MTX_APIADDRESS=:9997
+      - MTX_APIBASE=/ # Thử thêm các cấu hình sau
+      - MTX_APIMETHOD=http  # Đảm bảo giao thức HTTP
+    ports:
+      - "8554:8554"       # RTSP port
+      - "8333:8554"
+      - "1935:1935"      # RTMP port
+      - "8888:8888"      # HLS port
+      - "8889:8889"      # HTTPS port
+      - "8189:8189/udp"  # WebRTC port
+      - "8890:8890/udp"  # Additional UDP port
+      - "9997:9997"
+    volumes:
+      - ./camera_service/mediamtx.yml:/mediamtx.yml
+
+  prometheus:
+    image: prom/prometheus:v2.26.0
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - cadvisor
+      - node-exporter
+
+  grafana:
+    image: grafana/grafana:7.5.3-ubuntu
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
+  node-exporter:
+    image: prom/node-exporter:v1.1.2
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.ignored-mount-points='^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'"
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    command: server --console-address ":9001" /data
+    volumes:
+      - minio_data:/data
+
+volumes:
+  infra_data_postgis:
+  notification_data:
+  auth_data:
+  redis_data:
+  user_data:
+  camera_data:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_log:
+  grafana-storage:
+  minio_data:
