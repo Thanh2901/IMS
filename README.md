@@ -1,4 +1,4 @@
-# Infrastructure Monitoring System
+# Infrastructure Monitor System
 
 Welcome to the **Infrastructure Monitoring System**! This project is tailored for managing cameras and infrastructure objects on highways. It empowers administrators to monitor the condition of infrastructure, detect faults or lost objects, and notify users in real-time. The system also provides tools for generating detailed reports to ensure timely maintenance and issue resolution.
 
